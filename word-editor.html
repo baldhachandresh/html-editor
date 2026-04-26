@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WriteFlow — Word Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #f0ece4; font-family: 'DM Sans', sans-serif; }
+
+  :root {
+    --bg:        #f0ece4;
+    --chrome:    #ffffff;
+    --border:    #e0dbd2;
+    --shadow:    rgba(60,50,30,.08);
+    --text:      #2c2825;
+    --muted:     #9b9490;
+    --accent:    #c0692a;
+    --accentL:   #e8884a;
+    --page:      #ffffff;
+    --page-sh:   rgba(60,50,30,.13);
+    --ribbon:    #fdfcfa;
+    --btn-hover: #f5f0e8;
+    --btn-active:#ede6d8;
+    --select:    rgba(192,105,42,.15);
+  }
+
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ccc7bd; border-radius: 4px; }
+
+  /* ── App shell ── */
+  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* ── Title bar ── */
+  #titlebar {
+    height: 48px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  #app-logo {
+    font-family: 'Lora', serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -.01em;
+    margin-right: 4px; flex-shrink: 0;
+  }
+  #doc-title-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    color: var(--text);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 10px;
+    background: transparent;
+    outline: none;
+    min-width: 160px;
+    transition: border-color .2s, background .2s;
+  }
+  #doc-title-input:hover  { border-color: var(--border); background: var(--btn-hover); }
+  #doc-title-input:focus  { border-color: var(--accent); background: #fff; }
+  #saved-badge {
+    font-size: 11.5px; color: var(--muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  #saved-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #6bcf7f;
+  }
+  .spacer { flex: 1; }
+
+  /* ── Ribbon (toolbar) ── */
+  #ribbon {
+    background: var(--ribbon);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    padding: 0 16px;
+  }
+  #ribbon-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+  .rtab {
+    font-size: 11.5px; font-weight: 500; color: var(--muted);
+    padding: 6px 14px; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+  }
+  .rtab.active { color: var(--accent); border-color: var(--accent); }
+  .rtab:hover:not(.active) { color: var(--text); }
+
+  #ribbon-body { padding: 6px 0; display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+
+  .rb-sep {
+    width: 1px; height: 26px; background: var(--border);
+    margin: 0 6px; flex-shrink: 0;
+  }
+
+  /* Toolbar buttons */
+  .rb {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 28px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .12s, border-color .12s;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .rb:hover  { background: var(--btn-hover); border-color: var(--border); }
+  .rb.active { background: var(--btn-active); border-color: #d0c9be; }
+  .rb-wide   { width: auto; padding: 0 10px; gap: 5px; }
+
+  /* Select dropdowns */
+  .rb-select {
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--chrome);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    padding: 0 6px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .rb-select:hover  { border-color: #bbb5aa; }
+  .rb-select:focus  { border-color: var(--accent); }
+
+  /* Color picker */
+  .rb-color {
+    width: 30px; height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 3px;
+    cursor: pointer;
+    background: var(--chrome);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+    position: relative;
+  }
+  .rb-color svg { pointer-events: none; }
+  .rb-color input[type=color] {
+    position: absolute; opacity: 0; width: 100%; height: 100%;
+    cursor: pointer; border: none; padding: 0;
+  }
+  .color-bar {
+    width: 18px; height: 3px; border-radius: 2px;
+    pointer-events: none;
+  }
+
+  /* Tooltip */
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 5px); left: 50%;
+    transform: translateX(-50%);
+    background: #3c3226; color: #f5f0e8;
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    padding: 4px 9px; border-radius: 5px;
+    white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s;
+    z-index: 50;
+  }
+  [data-tip]:hover::after { opacity: 1; }
+
+  /* ── Page area ── */
+  #page-area {
+    flex: 1; overflow-y: auto; overflow-x: auto;
+    padding: 40px 24px 60px;
+    background: var(--bg);
+  }
+
+  /* Page */
+  #page {
+    width: 816px; /* ~letter width at 96dpi */
+    min-height: 1056px;
+    margin: 0 auto;
+    background: var(--page);
+    box-shadow: 0 4px 32px var(--page-sh), 0 1px 4px rgba(0,0,0,.06);
+    border-radius: 2px;
+    position: relative;
+  }
+
+  /* Margin guides (visual only) */
+  #page::before {
+    content: '';
+    position: absolute;
+    inset: 72px 72px 72px 88px;
+    border: 1px dashed rgba(192,105,42,.1);
+    pointer-events: none;
+    border-radius: 1px;
+  }
+
+  /* Editable area */
+  #editor {
+    min-height: 912px;
+    padding: 72px 88px 72px 96px;
+    outline: none;
+    font-family: 'Lora', serif;
+    font-size: 13pt;
+    line-height: 1.75;
+    color: var(--text);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  #editor:focus { outline: none; }
+  #editor p { margin-bottom: .4em; }
+  #editor h1 { font-size: 2.2em; font-weight: 700; margin: .5em 0 .2em; color: #1e1a16; }
+  #editor h2 { font-size: 1.7em; font-weight: 600; margin: .5em 0 .2em; color: #2c2825; }
+  #editor h3 { font-size: 1.35em; font-weight: 600; margin: .5em 0 .15em; }
+  #editor h4 { font-size: 1.1em; font-weight: 600; margin: .4em 0 .1em; }
+  #editor ul, #editor ol { padding-left: 2em; margin-bottom: .5em; }
+  #editor li { margin-bottom: .15em; }
+  #editor blockquote {
+    border-left: 3px solid var(--accentL);
+    margin: 1em 0; padding: .4em 1.2em;
+    color: #6b6460; font-style: italic; background: #fdf8f3;
+  }
+  #editor table {
+    border-collapse: collapse; width: 100%; margin: 1em 0;
+  }
+  #editor table td, #editor table th {
+    border: 1px solid var(--border); padding: 7px 12px;
+  }
+  #editor table th { background: #f5f0e8; font-weight: 600; }
+  #editor hr { border: none; border-top: 2px solid var(--border); margin: 1.5em 0; }
+  #editor a { color: var(--accent); text-decoration: underline; }
+  #editor ::selection { background: var(--select); }
+  #editor code {
+    background: #f5f0e8; padding: 1px 5px; border-radius: 3px;
+    font-family: 'Courier New', monospace; font-size: .9em;
+  }
+  #editor pre {
+    background: #f5f0e8; padding: 14px 18px; border-radius: 8px;
+    font-family: 'Courier New', monospace; font-size: .88em;
+    overflow-x: auto; margin: 1em 0;
+  }
+
+  /* ── Status bar ── */
+  #statusbar {
+    height: 26px;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 20px;
+    flex-shrink: 0;
+  }
+  .sb-item {
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+
+  /* ── Find & Replace panel ── */
+  #find-panel {
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    padding: 7px 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  #find-panel.open { display: flex; }
+  #find-panel input {
+    height: 28px; border: 1px solid var(--border);
+    border-radius: 5px; padding: 0 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text); outline: none; background: var(--bg);
+    width: 200px;
+  }
+  #find-panel input:focus { border-color: var(--accent); }
+  .fp-btn {
+    height: 28px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--chrome); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 12.5px;
+    cursor: pointer; transition: background .12s;
+  }
+  .fp-btn:hover { background: var(--btn-hover); }
+  .fp-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .fp-btn.primary:hover { background: var(--accentL); border-color: var(--accentL); }
+  #find-count { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 44px; left: 50%;
+    transform: translateX(-50%);
+    background: #3c3226; color: #f5f0e8;
+    font-size: 12.5px; font-family: 'DM Sans', sans-serif;
+    padding: 9px 20px; border-radius: 8px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── Print styles ── */
+  @media print {
+    #titlebar, #ribbon, #statusbar, #find-panel, #toast { display: none !important; }
+    #page-area { padding: 0; background: #fff; }
+    #page { box-shadow: none; margin: 0; width: 100%; }
+    #editor { padding: 0; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    #page { width: 100%; min-width: 0; }
+    #editor { padding: 40px 28px; }
+  }
+
+  /* ── Link dialog ── */
+  .dialog-overlay {
+    position: fixed; inset: 0; background: rgba(44,40,37,.35);
+    backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .dialog-overlay.open { display: flex; }
+  .dialog-box {
+    background: #fff; border-radius: 12px;
+    padding: 24px 28px; width: 380px; max-width: 95vw;
+    box-shadow: 0 16px 56px rgba(44,40,37,.2);
+  }
+  .dialog-box h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+  .dialog-box input {
+    width: 100%; height: 34px; border: 1px solid var(--border);
+    border-radius: 6px; padding: 0 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+    color: var(--text); outline: none; margin-bottom: 12px;
+  }
+  .dialog-box input:focus { border-color: var(--accent); }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+  /* Table dialog */
+  .dialog-row { display: flex; gap: 12px; }
+  .dialog-field { flex: 1; }
+  .dialog-field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ TITLE BAR ══ -->
+  <div id="titlebar">
+    <span id="app-logo">WriteFlow</span>
+    <div class="rb-sep"></div>
+    <input id="doc-title-input" type="text" value="Untitled Document" spellcheck="false" />
+    <span id="saved-badge"><span class="dot"></span>Saved</span>
+    <div class="spacer"></div>
+
+    <!-- File actions -->
+    <button class="rb rb-wide" data-tip="New Document" onclick="newDoc()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span style="font-size:12.5px;">New</span>
+    </button>
+    <button class="rb rb-wide" data-tip="Open .txt file" onclick="openFile()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span style="font-size:12.5px;">Open</span>
+    </button>
+    <input type="file" id="file-input" accept=".txt,.html,.htm" style="display:none" />
+    <button class="rb rb-wide" data-tip="Save as HTML" onclick="saveHTML()" style="color:var(--accent);font-weight:500;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span style="font-size:12.5px;">Save</span>
+    </button>
+    <button class="rb rb-wide" data-tip="Print / Save as PDF" onclick="window.print()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span style="font-size:12.5px;">Print</span>
+    </button>
+  </div>
+
+  <!-- ══ RIBBON ══ -->
+  <div id="ribbon">
+    <div id="ribbon-tabs">
+      <span class="rtab active" onclick="showTab('home',this)">Home</span>
+      <span class="rtab" onclick="showTab('insert',this)">Insert</span>
+      <span class="rtab" onclick="showTab('format',this)">Format</span>
+      <span class="rtab" onclick="showTab('view',this)">View</span>
+    </div>
+
+    <!-- Home tab -->
+    <div id="tab-home" class="ribbon-panel" id="ribbon-body">
+      <div id="ribbon-body" style="padding:6px 0;display:flex;align-items:center;gap:2px;flex-wrap:wrap;">
+
+        <!-- Clipboard -->
+        <button class="rb" data-tip="Cut (Ctrl+X)" onclick="document.execCommand('cut')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="6" cy="20" r="2"/><circle cx="6" cy="4" r="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="21" y2="21"/><line x1="6" y1="18" x2="21" y2="3"/></svg>
+        </button>
+        <button class="rb" data-tip="Copy (Ctrl+C)" onclick="document.execCommand('copy')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button class="rb" data-tip="Paste (Ctrl+V)" onclick="document.execCommand('paste')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </button>
+        <button class="rb" data-tip="Undo (Ctrl+Z)" onclick="document.execCommand('undo')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        </button>
+        <button class="rb" data-tip="Redo (Ctrl+Y)" onclick="document.execCommand('redo')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+        </button>
+
+        <div class="rb-sep"></div>
+
+        <!-- Font family -->
+        <select class="rb-select" id="font-family" style="width:130px" onchange="applyFont(this.value)" data-tip="Font Family">
+          <option value="Lora, serif">Lora (default)</option>
+          <option value="'DM Sans', sans-serif">DM Sans</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+          <option value="Impact, sans-serif">Impact</option>
+        </select>
+
+        <!-- Font size -->
+        <select class="rb-select" id="font-size" style="width:62px" onchange="applyFontSize(this.value)" data-tip="Font Size">
+          <option>8</option><option>9</option><option>10</option>
+          <option>11</option><option>12</option><option selected>13</option>
+          <option>14</option><option>16</option><option>18</option>
+          <option>20</option><option>24</option><option>28</option>
+          <option>32</option><option>36</option><option>48</option><option>72</option>
+        </select>
+
+        <div class="rb-sep"></div>
+
+        <!-- Text formatting -->
+        <button class="rb" id="btn-bold" data-tip="Bold (Ctrl+B)" onclick="fmt('bold')"><b>B</b></button>
+        <button class="rb" id="btn-italic" data-tip="Italic (Ctrl+I)" onclick="fmt('italic')"><i>I</i></button>
+        <button class="rb" id="btn-underline" data-tip="Underline (Ctrl+U)" onclick="fmt('underline')"><u>U</u></button>
+        <button class="rb" id="btn-strikethrough" data-tip="Strikethrough" onclick="fmt('strikeThrough')"><s>S</s></button>
+        <button class="rb" id="btn-superscript" data-tip="Superscript" onclick="fmt('superscript')" style="font-size:10px;">X<sup>2</sup></button>
+        <button class="rb" id="btn-subscript" data-tip="Subscript" onclick="fmt('subscript')" style="font-size:10px;">X<sub>2</sub></button>
+
+        <div class="rb-sep"></div>
+
+        <!-- Colors -->
+        <div class="rb-color" data-tip="Font Color" id="fc-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c2825" stroke-width="1.8"><path d="M9 3L5 21"/><path d="M19 3l-4 18"/><path d="M5 10h14"/><path d="M3 21h18"/></svg>
+          <div class="color-bar" id="fc-bar" style="background:var(--accent)"></div>
+          <input type="color" id="font-color" value="#c0692a" oninput="applyColor('foreColor', this.value); document.getElementById('fc-bar').style.background=this.value" />
+        </div>
+        <div class="rb-color" data-tip="Highlight Color" id="hl-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2c2825" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5l4 4L7 21l-4 1 1-4z"/></svg>
+          <div class="color-bar" id="hl-bar" style="background:#fff176"></div>
+          <input type="color" id="highlight-color" value="#fff176" oninput="applyHighlight(this.value); document.getElementById('hl-bar').style.background=this.value" />
+        </div>
+        <button class="rb" data-tip="Remove Formatting" onclick="fmt('removeFormat')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+
+        <div class="rb-sep"></div>
+
+        <!-- Alignment -->
+        <button class="rb" id="btn-left"    data-tip="Align Left (Ctrl+L)"   onclick="fmt('justifyLeft')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="15" y1="12" x2="3" y2="12"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+        </button>
+        <button class="rb" id="btn-center" data-tip="Align Center (Ctrl+E)" onclick="fmt('justifyCenter')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="12" x2="6" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+        </button>
+        <button class="rb" id="btn-right"  data-tip="Align Right (Ctrl+R)"  onclick="fmt('justifyRight')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="9" y2="12"/><line x1="21" y1="18" x2="5" y2="18"/></svg>
+        </button>
+        <button class="rb" id="btn-justify" data-tip="Justify" onclick="fmt('justifyFull')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+        </button>
+
+        <div class="rb-sep"></div>
+
+        <!-- Lists -->
+        <button class="rb" id="btn-ul" data-tip="Bullet List" onclick="fmt('insertUnorderedList')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="rb" id="btn-ol" data-tip="Numbered List" onclick="fmt('insertOrderedList')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1M4 6v4M5 10H3" stroke-linecap="round"/><path d="M3 14h2v2H3v2h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="rb" data-tip="Indent" onclick="fmt('indent')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 8 7 12 3 16"/><line x1="21" y1="12" x2="11" y2="12"/><line x1="21" y1="6" x2="11" y2="6"/><line x1="21" y1="18" x2="11" y2="18"/></svg>
+        </button>
+        <button class="rb" data-tip="Outdent" onclick="fmt('outdent')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="7 8 3 12 7 16"/><line x1="21" y1="12" x2="11" y2="12"/><line x1="21" y1="6" x2="11" y2="6"/><line x1="21" y1="18" x2="11" y2="18"/></svg>
+        </button>
+
+        <div class="rb-sep"></div>
+
+        <!-- Heading styles -->
+        <select class="rb-select" id="block-format" style="width:110px" onchange="applyBlock(this.value)" data-tip="Paragraph Style">
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+          <option value="h4">Heading 4</option>
+          <option value="blockquote">Blockquote</option>
+          <option value="pre">Code Block</option>
+        </select>
+
+        <!-- Line spacing -->
+        <select class="rb-select" id="line-spacing" style="width:80px" onchange="applyLineSpacing(this.value)" data-tip="Line Spacing">
+          <option value="1.2">1.2×</option>
+          <option value="1.5">1.5×</option>
+          <option value="1.75" selected>1.75×</option>
+          <option value="2">2.0×</option>
+          <option value="2.5">2.5×</option>
+        </select>
+
+        <div class="rb-sep"></div>
+
+        <!-- Find & Replace -->
+        <button class="rb rb-wide" data-tip="Find & Replace (Ctrl+F)" onclick="toggleFind()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span style="font-size:12px;">Find</span>
+        </button>
+
+        <!-- Clear all -->
+        <button class="rb rb-wide" data-tip="Clear document" onclick="clearDoc()" style="color:#cc4444;">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+          <span style="font-size:12px;">Clear</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Insert tab (hidden by default) -->
+    <div id="tab-insert" class="ribbon-panel" style="display:none; padding:6px 0;display:none;align-items:center;gap:2px;flex-wrap:wrap;">
+      <button class="rb rb-wide" data-tip="Insert horizontal line" onclick="insertHR()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <span style="font-size:12px;">Divider</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert link" onclick="openLinkDialog()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span style="font-size:12px;">Link</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert image from URL" onclick="insertImage()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="font-size:12px;">Image</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert table" onclick="openTableDialog()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        <span style="font-size:12px;">Table</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert special character" onclick="insertSpecialChar()">
+        <span style="font-size:13px;">Ω</span>
+        <span style="font-size:12px;">Symbol</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert date & time" onclick="insertDateTime()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
+        <span style="font-size:12px;">Date/Time</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Word count" onclick="showWordCount()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span style="font-size:12px;">Count</span>
+      </button>
+    </div>
+
+    <!-- Format tab -->
+    <div id="tab-format" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:2px;flex-wrap:wrap;">
+      <select class="rb-select" style="width:130px" onchange="applyFont(this.value)" data-tip="Font Family">
+        <option value="Lora, serif">Lora</option>
+        <option value="'DM Sans', sans-serif">DM Sans</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="Arial, sans-serif">Arial</option>
+      </select>
+      <button class="rb rb-wide" onclick="document.execCommand('fontSize',false,'5')">
+        <span style="font-size:12px;">Increase Size</span>
+      </button>
+      <button class="rb rb-wide" onclick="document.execCommand('fontSize',false,'2')">
+        <span style="font-size:12px;">Decrease Size</span>
+      </button>
+      <div class="rb-sep"></div>
+      <button class="rb rb-wide" onclick="fmt('bold')"><b>Bold</b></button>
+      <button class="rb rb-wide" onclick="fmt('italic')"><i>Italic</i></button>
+      <button class="rb rb-wide" onclick="fmt('underline')"><u>Underline</u></button>
+      <button class="rb rb-wide" onclick="fmt('strikeThrough')"><s>Strike</s></button>
+      <div class="rb-sep"></div>
+      <button class="rb rb-wide" onclick="fmt('removeFormat')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span style="font-size:12px;">Clear Formatting</span>
+      </button>
+    </div>
+
+    <!-- View tab -->
+    <div id="tab-view" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:6px;flex-wrap:wrap;">
+      <label style="font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="show-ruler" checked onchange="toggleRuler(this.checked)" style="accent-color:var(--accent);" />
+        Show Margin Guides
+      </label>
+      <div class="rb-sep"></div>
+      <label style="font-size:12.5px;color:var(--muted);">Page Width</label>
+      <input type="range" id="page-zoom" min="60" max="100" value="100"
+        style="accent-color:var(--accent);cursor:pointer;"
+        oninput="setPageZoom(this.value)" />
+      <span id="zoom-label" style="font-size:11.5px;color:var(--muted);min-width:36px;">100%</span>
+      <div class="rb-sep"></div>
+      <button class="rb rb-wide" onclick="window.print()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span style="font-size:12px;">Print Preview</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ FIND & REPLACE ══ -->
+  <div id="find-panel">
+    <svg width="13" height="13" fill="none" stroke="#9b9490" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="find-input" type="text" placeholder="Find…" oninput="doFind()" />
+    <input id="replace-input" type="text" placeholder="Replace with…" />
+    <button class="fp-btn" onclick="findNext()">Next</button>
+    <button class="fp-btn" onclick="doReplace()">Replace</button>
+    <button class="fp-btn primary" onclick="doReplaceAll()">Replace All</button>
+    <span id="find-count"></span>
+    <div style="flex:1"></div>
+    <button onclick="toggleFind()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;">✕</button>
+  </div>
+
+  <!-- ══ PAGE AREA ══ -->
+  <div id="page-area">
+    <div id="page">
+      <div id="editor" contenteditable="true" spellcheck="true">
+        <h1>Welcome to WriteFlow</h1>
+        <p>Start writing your document here. Use the toolbar above to format text, insert elements, and style your document.</p>
+        <p><br></p>
+        <h2>Getting Started</h2>
+        <p>WriteFlow supports all essential word processing features:</p>
+        <ul>
+          <li><strong>Bold</strong>, <em>Italic</em>, <u>Underline</u>, and <s>Strikethrough</s> text</li>
+          <li>Font family and size controls</li>
+          <li>Text color and highlight</li>
+          <li>Paragraph alignment and line spacing</li>
+          <li>Bullet and numbered lists</li>
+          <li>Headings, blockquotes, and code blocks</li>
+          <li>Insert links, images, tables, and dividers</li>
+          <li>Find &amp; Replace</li>
+          <li>Save as HTML or Print to PDF</li>
+        </ul>
+        <p><br></p>
+        <blockquote>Writing is thinking. To write well is to think clearly. — David McCullough</blockquote>
+        <p><br></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STATUS BAR ══ -->
+  <div id="statusbar">
+    <div class="sb-item">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      <span id="sb-doc">Untitled Document</span>
+    </div>
+    <div class="rb-sep" style="height:14px;"></div>
+    <div class="sb-item" id="sb-words">Words: 0</div>
+    <div class="rb-sep" style="height:14px;"></div>
+    <div class="sb-item" id="sb-chars">Chars: 0</div>
+    <div class="rb-sep" style="height:14px;"></div>
+    <div class="sb-item" id="sb-para">Paragraphs: 0</div>
+    <div style="flex:1"></div>
+    <div class="sb-item">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Letter (8.5 × 11 in)</span>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ══ LINK DIALOG ══ -->
+<div class="dialog-overlay" id="link-dialog">
+  <div class="dialog-box">
+    <h3>🔗 Insert Link</h3>
+    <input id="link-text" type="text" placeholder="Link text (leave empty to use selection)" />
+    <input id="link-url" type="url" placeholder="https://example.com" />
+    <div class="dialog-actions">
+      <button class="fp-btn" onclick="closeLinkDialog()">Cancel</button>
+      <button class="fp-btn primary" onclick="applyLink()">Insert</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TABLE DIALOG ══ -->
+<div class="dialog-overlay" id="table-dialog">
+  <div class="dialog-box">
+    <h3>📊 Insert Table</h3>
+    <div class="dialog-row">
+      <div class="dialog-field">
+        <label>Rows</label>
+        <input id="tbl-rows" type="number" min="1" max="20" value="3" style="width:100%" />
+      </div>
+      <div class="dialog-field">
+        <label>Columns</label>
+        <input id="tbl-cols" type="number" min="1" max="10" value="3" style="width:100%" />
+      </div>
+    </div>
+    <div class="dialog-actions" style="margin-top:14px;">
+      <button class="fp-btn" onclick="closeTableDialog()">Cancel</button>
+      <button class="fp-btn primary" onclick="applyTable()">Insert</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast"></div>
+
+<script>
+  // ── Elements ────────────────────────────────────────
+  const editor    = document.getElementById('editor');
+  const sbWords   = document.getElementById('sb-words');
+  const sbChars   = document.getElementById('sb-chars');
+  const sbPara    = document.getElementById('sb-para');
+  const sbDoc     = document.getElementById('sb-doc');
+  const titleInput= document.getElementById('doc-title-input');
+  const savedBadge= document.getElementById('saved-badge');
+
+  // ── Saved state ─────────────────────────────────────
+  let savedTimer  = null;
+  let findMatches = [];
+  let findIdx     = -1;
+  let savedRange  = null; // saved selection for dialogs
+
+  // ── Update stats ─────────────────────────────────────
+  function updateStats() {
+    const text  = editor.innerText || '';
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    const paras = (editor.innerHTML.match(/<(p|h[1-6]|blockquote|pre|li)/gi) || []).length;
+    sbWords.textContent = 'Words: ' + words.toLocaleString();
+    sbChars.textContent = 'Chars: ' + chars.toLocaleString();
+    sbPara.textContent  = 'Paragraphs: ' + paras;
+    markUnsaved();
+  }
+
+  function markUnsaved() {
+    savedBadge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#f5a623;display:inline-block;"></span> Unsaved';
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(autoSave, 3000);
+  }
+
+  function autoSave() {
+    localStorage.setItem('writeflow_content', editor.innerHTML);
+    localStorage.setItem('writeflow_title',   titleInput.value);
+    savedBadge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#6bcf7f;display:inline-block;"></span> Saved';
+  }
+
+  // ── Format commands ──────────────────────────────────
+  function fmt(cmd) {
+    editor.focus();
+    document.execCommand(cmd, false, null);
+    updateActiveButtons();
+  }
+
+  function applyFont(val) {
+    editor.focus();
+    document.execCommand('fontName', false, val);
+  }
+
+  function applyFontSize(pt) {
+    // execCommand fontSize uses 1-7 scale; we use inline style instead
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const span  = document.createElement('span');
+    span.style.fontSize = pt + 'pt';
+    range.surroundContents(span);
+  }
+
+  function applyColor(cmd, color) {
+    editor.focus();
+    document.execCommand(cmd, false, color);
+  }
+
+  function applyHighlight(color) {
+    editor.focus();
+    document.execCommand('hiliteColor', false, color);
+  }
+
+  function applyBlock(tag) {
+    editor.focus();
+    document.execCommand('formatBlock', false, '<' + tag + '>');
+    setTimeout(() => {
+      document.getElementById('block-format').value = tag;
+    }, 50);
+  }
+
+  function applyLineSpacing(val) {
+    editor.style.lineHeight = val;
+  }
+
+  // ── Track active states ──────────────────────────────
+  function updateActiveButtons() {
+    const cmds = {
+      'btn-bold': 'bold', 'btn-italic': 'italic', 'btn-underline': 'underline',
+      'btn-strikethrough': 'strikeThrough', 'btn-superscript': 'superscript',
+      'btn-subscript': 'subscript',
+      'btn-left': 'justifyLeft', 'btn-center': 'justifyCenter',
+      'btn-right': 'justifyRight', 'btn-justify': 'justifyFull',
+      'btn-ul': 'insertUnorderedList', 'btn-ol': 'insertOrderedList',
+    };
+    for (const [id, cmd] of Object.entries(cmds)) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('active', document.queryCommandState(cmd));
+    }
+    // Update block format select
+    const block = document.queryCommandValue('formatBlock').toLowerCase().replace(/[<>]/g,'');
+    const bf = document.getElementById('block-format');
+    if (bf && block) bf.value = block;
+  }
+
+  editor.addEventListener('keyup',   updateStats);
+  editor.addEventListener('input',   updateStats);
+  editor.addEventListener('mouseup', updateActiveButtons);
+  editor.addEventListener('keyup',   updateActiveButtons);
+
+  // ── Title sync ───────────────────────────────────────
+  titleInput.addEventListener('input', () => {
+    sbDoc.textContent = titleInput.value || 'Untitled Document';
+    markUnsaved();
+  });
+
+  // ── Ribbon tabs ──────────────────────────────────────
+  function showTab(name, el) {
+    document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    const panels = { home:'tab-home', insert:'tab-insert', format:'tab-format', view:'tab-view' };
+    Object.values(panels).forEach(id => {
+      const p = document.getElementById(id);
+      if (p) p.style.display = 'none';
+    });
+    const target = document.getElementById(panels[name]);
+    if (target) target.style.display = 'flex';
+  }
+  // Show home tab by default (already set via display block)
+  document.getElementById('tab-home').style.display = 'flex';
+
+  // ── Keyboard shortcuts ───────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleFind(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveHTML(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); window.print(); }
+    if (e.key === 'Escape') { closeLinkDialog(); closeTableDialog(); if (findOpen) toggleFind(); }
+  });
+
+  // ── File ops ─────────────────────────────────────────
+  function newDoc() {
+    if (!confirm('Create a new document? Unsaved changes will be lost.')) return;
+    editor.innerHTML = '<p><br></p>';
+    titleInput.value = 'Untitled Document';
+    sbDoc.textContent= 'Untitled Document';
+    autoSave(); updateStats();
+    toast('New document created');
+  }
+
+  function openFile() {
+    document.getElementById('file-input').click();
+  }
+
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const content = ev.target.result;
+      if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+        const parser = new DOMParser();
+        const doc    = parser.parseFromString(content, 'text/html');
+        editor.innerHTML = doc.body.innerHTML;
+      } else {
+        editor.innerText = content;
+      }
+      titleInput.value  = file.name.replace(/\.[^.]+$/, '');
+      sbDoc.textContent = titleInput.value;
+      updateStats();
+      toast('Opened: ' + file.name);
+    };
+    reader.readAsText(file);
+    this.value = '';
+  });
+
+  function saveHTML() {
+    const title = titleInput.value || 'document';
+    const html  = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8" />\n<title>${title}</title>\n<style>body{font-family:'Lora',Georgia,serif;max-width:800px;margin:60px auto;padding:0 24px;line-height:1.75;color:#2c2825;font-size:13pt}h1,h2,h3,h4{font-weight:700;margin:.5em 0 .2em}blockquote{border-left:3px solid #c0692a;padding:.4em 1.2em;color:#6b6460;font-style:italic;background:#fdf8f3}table{border-collapse:collapse;width:100%}td,th{border:1px solid #e0dbd2;padding:7px 12px}th{background:#f5f0e8;font-weight:600}</style>\n</head>\n<body>\n${editor.innerHTML}\n</body>\n</html>`;
+    const blob  = new Blob([html], { type: 'text/html' });
+    const a     = document.createElement('a');
+    a.href      = URL.createObjectURL(blob);
+    a.download  = title + '.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    autoSave();
+    toast('✅ Saved as ' + title + '.html');
+  }
+
+  function clearDoc() {
+    if (!confirm('Clear all content?')) return;
+    editor.innerHTML = '<p><br></p>';
+    updateStats();
+    toast('Document cleared');
+  }
+
+  // ── Insert helpers ───────────────────────────────────
+  function insertHR() {
+    editor.focus();
+    document.execCommand('insertHTML', false, '<hr>');
+    toast('Divider inserted');
+  }
+
+  function insertImage() {
+    const url = prompt('Enter image URL:');
+    if (!url) return;
+    const alt = prompt('Alt text (optional):') || '';
+    editor.focus();
+    document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:4px;margin:8px 0;" />`);
+    toast('Image inserted');
+  }
+
+  function insertDateTime() {
+    const now = new Date();
+    const str = now.toLocaleString('en-IN', { dateStyle:'long', timeStyle:'short' });
+    editor.focus();
+    document.execCommand('insertText', false, str);
+  }
+
+  function insertSpecialChar() {
+    const chars = ['©','®','™','€','£','¥','°','±','×','÷','≤','≥','≠','∞','√','π','α','β','γ','δ','→','←','↑','↓','★','♥','♦','♣','♠','•','–','—','"','"','\'','\''];
+    const ch = prompt('Choose symbol:\n' + chars.join('  '));
+    if (ch) { editor.focus(); document.execCommand('insertText', false, ch); }
+  }
+
+  function showWordCount() {
+    const text  = editor.innerText || '';
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    const charsNoSpace = text.replace(/\s/g,'').length;
+    const paras = (editor.innerHTML.match(/<(p|h[1-6]|blockquote|pre)/gi) || []).length;
+    alert(`📊 Document Statistics\n\nWords: ${words}\nCharacters (with spaces): ${chars}\nCharacters (no spaces): ${charsNoSpace}\nParagraphs: ${paras}`);
+  }
+
+  // ── Find & Replace ───────────────────────────────────
+  let findOpen = false;
+
+  function toggleFind() {
+    findOpen = !findOpen;
+    const panel = document.getElementById('find-panel');
+    panel.classList.toggle('open', findOpen);
+    if (findOpen) { document.getElementById('find-input').focus(); doFind(); }
+    else clearHighlights();
+  }
+
+  function doFind() {
+    clearHighlights();
+    const term = document.getElementById('find-input').value.trim();
+    const countEl = document.getElementById('find-count');
+    if (!term) { countEl.textContent = ''; return; }
+    const body = editor;
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    let html = body.innerHTML;
+    let count = 0;
+    html = html.replace(regex, m => { count++; return `<mark class="find-hl" style="background:#fff176;color:inherit;">${m}</mark>`; });
+    body.innerHTML = html;
+    countEl.textContent = count ? `${count} found` : 'Not found';
+    findIdx = -1;
+  }
+
+  function findNext() {
+    const marks = editor.querySelectorAll('.find-hl');
+    if (!marks.length) return;
+    if (findIdx >= 0 && findIdx < marks.length) marks[findIdx].style.background = '#fff176';
+    findIdx = (findIdx + 1) % marks.length;
+    marks[findIdx].style.background = '#ffb347';
+    marks[findIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearHighlights() {
+    editor.querySelectorAll('.find-hl').forEach(el => {
+      el.replaceWith(document.createTextNode(el.textContent));
+    });
+    editor.normalize();
+  }
+
+  function doReplace() {
+    const term = document.getElementById('find-input').value;
+    const repl = document.getElementById('replace-input').value;
+    if (!term) return;
+    // Find first highlighted
+    const mark = editor.querySelector('.find-hl');
+    if (mark) { mark.replaceWith(document.createTextNode(repl)); editor.normalize(); }
+    doFind();
+  }
+
+  function doReplaceAll() {
+    const term = document.getElementById('find-input').value.trim();
+    const repl = document.getElementById('replace-input').value;
+    if (!term) return;
+    clearHighlights();
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    let count = 0;
+    const walk = node => {
+      if (node.nodeType === 3) {
+        const matches = node.textContent.match(regex);
+        if (matches) {
+          count += matches.length;
+          const span = document.createElement('span');
+          span.innerHTML = node.textContent.replace(regex, repl);
+          node.replaceWith(span);
+        }
+      } else {
+        [...node.childNodes].forEach(walk);
+      }
+    };
+    walk(editor);
+    editor.normalize();
+    toast(`Replaced ${count} occurrence(s)`);
+    document.getElementById('find-count').textContent = `${count} replaced`;
+  }
+
+  // ── Link dialog ──────────────────────────────────────
+  function openLinkDialog() {
+    // Save current selection
+    const sel = window.getSelection();
+    if (sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+    document.getElementById('link-text').value = sel.toString();
+    document.getElementById('link-url').value  = '';
+    document.getElementById('link-dialog').classList.add('open');
+    setTimeout(() => document.getElementById('link-url').focus(), 50);
+  }
+
+  function closeLinkDialog() {
+    document.getElementById('link-dialog').classList.remove('open');
+    savedRange = null;
+  }
+
+  function applyLink() {
+    const url  = document.getElementById('link-url').value.trim();
+    const text = document.getElementById('link-text').value.trim();
+    if (!url) { toast('Please enter a URL'); return; }
+    const href = url.startsWith('http') ? url : 'https://' + url;
+    editor.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    if (text && !(window.getSelection().toString())) {
+      document.execCommand('insertHTML', false, `<a href="${href}" target="_blank">${text}</a>`);
+    } else {
+      document.execCommand('createLink', false, href);
+      const links = editor.querySelectorAll('a[href="' + href + '"]');
+      links.forEach(l => l.setAttribute('target', '_blank'));
+    }
+    closeLinkDialog();
+    toast('Link inserted');
+  }
+
+  // ── Table dialog ─────────────────────────────────────
+  function openTableDialog() {
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+    document.getElementById('table-dialog').classList.add('open');
+    setTimeout(() => document.getElementById('tbl-rows').focus(), 50);
+  }
+
+  function closeTableDialog() {
+    document.getElementById('table-dialog').classList.remove('open');
+    savedRange = null;
+  }
+
+  function applyTable() {
+    const rows = parseInt(document.getElementById('tbl-rows').value) || 3;
+    const cols = parseInt(document.getElementById('tbl-cols').value) || 3;
+    let html = '<table><thead><tr>';
+    for (let c = 0; c < cols; c++) html += `<th>Header ${c+1}</th>`;
+    html += '</tr></thead><tbody>';
+    for (let r = 0; r < rows - 1; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) html += '<td>&nbsp;</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br></p>';
+    editor.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    document.execCommand('insertHTML', false, html);
+    closeTableDialog();
+    toast('Table inserted');
+  }
+
+  // ── View controls ────────────────────────────────────
+  function toggleRuler(show) {
+    document.getElementById('page').style.setProperty(
+      '--guide', show ? 'rgba(192,105,42,.1)' : 'transparent'
+    );
+    document.querySelector('#page::before');
+    // Use a class instead
+    document.getElementById('page').classList.toggle('no-guide', !show);
+  }
+
+  function setPageZoom(val) {
+    const px = Math.round(816 * val / 100);
+    document.getElementById('page').style.width = px + 'px';
+    document.getElementById('zoom-label').textContent = val + '%';
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ── Auto-load saved ───────────────────────────────────
+  function loadSaved() {
+    const content = localStorage.getItem('writeflow_content');
+    const title   = localStorage.getItem('writeflow_title');
+    if (content) { editor.innerHTML = content; toast('Restored last session'); }
+    if (title)   { titleInput.value = title; sbDoc.textContent = title; }
+    updateStats();
+  }
+
+  // ── Init ──────────────────────────────────────────────
+  loadSaved();
+  updateStats();
+
+  // Make dialog links work
+  document.getElementById('editor').addEventListener('click', e => {
+    if (e.target.tagName === 'A' && e.ctrlKey) {
+      window.open(e.target.href, '_blank');
+    }
+  });
+</script>
+</body>
+</html>
