@@ -17,6 +17,8 @@
     --btn-hover: #f5f0e8;
     --btn-active:#ede6d8;
     --select:    rgba(192,105,42,.15);
+    --page-w:    816px;  /* letter width at 96dpi */
+    --page-h:    1056px; /* letter height at 96dpi */
   }
 
   ::-webkit-scrollbar { width: 7px; height: 7px; }
@@ -179,19 +181,28 @@
     background: var(--bg);
   }
 
-  /* Page */
-  #page {
-    width: 816px; /* ~letter width at 96dpi */
-    min-height: 1056px;
+  /* Pages container */
+  #pages {
+    width: var(--page-w);
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px; /* real page break gap */
+  }
+
+  /* Single page (paper) */
+  .page {
+    width: var(--page-w);
+    min-height: var(--page-h);
     background: var(--page);
     box-shadow: 0 4px 32px var(--page-sh), 0 1px 4px rgba(0,0,0,.06);
     border-radius: 2px;
     position: relative;
+    overflow: hidden;
   }
 
   /* Margin guides (visual only) */
-  #page::before {
+  .page::before {
     content: '';
     position: absolute;
     inset: 72px 72px 72px 88px;
@@ -199,11 +210,11 @@
     pointer-events: none;
     border-radius: 1px;
   }
-  #page.no-guide::before { display: none; }
+  .page.no-guide::before { display: none; }
 
-  /* Editable area */
-  #editor {
-    min-height: 912px;
+  /* Editable area (one per page) */
+  .editor-page {
+    min-height: calc(var(--page-h) - 144px);
     padding: 72px 88px 72px 96px;
     outline: none;
     font-family: 'Lora', serif;
@@ -213,34 +224,34 @@
     word-break: break-word;
     overflow-wrap: break-word;
   }
-  #editor:focus { outline: none; }
-  #editor p { margin-bottom: var(--para-space, .4em); }
-  #editor h1 { font-size: 2.2em; font-weight: 700; margin: .5em 0 .2em; color: #1e1a16; }
-  #editor h2 { font-size: 1.7em; font-weight: 600; margin: .5em 0 .2em; color: #2c2825; }
-  #editor h3 { font-size: 1.35em; font-weight: 600; margin: .5em 0 .15em; }
-  #editor h4 { font-size: 1.1em; font-weight: 600; margin: .4em 0 .1em; }
-  #editor ul, #editor ol { padding-left: 2em; margin-bottom: .5em; }
-  #editor li { margin-bottom: .15em; }
-  #editor blockquote {
+  .editor-page:focus { outline: none; }
+  .editor-page p { margin-bottom: var(--para-space, .4em); }
+  .editor-page h1 { font-size: 2.2em; font-weight: 700; margin: .5em 0 .2em; color: #1e1a16; }
+  .editor-page h2 { font-size: 1.7em; font-weight: 600; margin: .5em 0 .2em; color: #2c2825; }
+  .editor-page h3 { font-size: 1.35em; font-weight: 600; margin: .5em 0 .15em; }
+  .editor-page h4 { font-size: 1.1em; font-weight: 600; margin: .4em 0 .1em; }
+  .editor-page ul, .editor-page ol { padding-left: 2em; margin-bottom: .5em; }
+  .editor-page li { margin-bottom: .15em; }
+  .editor-page blockquote {
     border-left: 3px solid var(--accentL);
     margin: 1em 0; padding: .4em 1.2em;
     color: #6b6460; font-style: italic; background: #fdf8f3;
   }
-  #editor table {
+  .editor-page table {
     border-collapse: collapse; width: 100%; margin: 1em 0;
   }
-  #editor table td, #editor table th {
+  .editor-page table td, .editor-page table th {
     border: 1px solid var(--border); padding: 7px 12px;
   }
-  #editor table th { background: #f5f0e8; font-weight: 600; }
-  #editor hr { border: none; border-top: 2px solid var(--border); margin: 1.5em 0; }
-  #editor a { color: var(--accent); text-decoration: underline; }
-  #editor ::selection { background: var(--select); }
-  #editor code {
+  .editor-page table th { background: #f5f0e8; font-weight: 600; }
+  .editor-page hr { border: none; border-top: 2px solid var(--border); margin: 1.5em 0; }
+  .editor-page a { color: var(--accent); text-decoration: underline; }
+  .editor-page ::selection { background: var(--select); }
+  .editor-page code {
     background: #f5f0e8; padding: 1px 5px; border-radius: 3px;
     font-family: 'Courier New', monospace; font-size: .9em;
   }
-  #editor pre {
+  .editor-page pre {
     background: #f5f0e8; padding: 14px 18px; border-radius: 8px;
     font-family: 'Courier New', monospace; font-size: .88em;
     overflow-x: auto; margin: 1em 0;
@@ -306,18 +317,100 @@
   }
   #toast.show { opacity: 1; }
 
+  /* ── Draw tab controls ── */
+  .draw-label { font-size: 12px; color: var(--muted); margin-left: 4px; }
+  .draw-color-input {
+    width: 30px; height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--chrome);
+    padding: 0;
+    cursor: pointer;
+  }
+  .draw-size { width: 120px; accent-color: var(--accent); cursor: pointer; }
+  .draw-size-label { font-size: 12px; color: var(--muted); min-width: 18px; display:inline-block; text-align:right; }
+
+  /* ── Draw overlay ── */
+  .draw-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44,40,37,.35);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 140;
+  }
+  .draw-overlay.open { display: flex; }
+  .draw-box {
+    width: min(1100px, 96vw);
+    height: min(740px, 86vh);
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(44,40,37,.22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .draw-top {
+    height: 46px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--ribbon);
+  }
+  .draw-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .draw-x {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 16px;
+  }
+  .draw-x:hover { background: var(--btn-hover); border-color: var(--border); color: var(--text); }
+  .draw-canvas-wrap {
+    flex: 1;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+  }
+  #draw-canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    touch-action: none;
+  }
+  .draw-hint {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    background: #fff;
+  }
+
   /* ── Print styles ── */
   @media print {
     #titlebar, #ribbon, #statusbar, #find-panel, #toast { display: none !important; }
+    .draw-overlay { display: none !important; }
     #page-area { padding: 0; background: #fff; }
-    #page { box-shadow: none; margin: 0; width: 100%; }
-    #editor { padding: 0; }
+    #pages { width: 100%; gap: 0; }
+    .page { box-shadow: none; margin: 0; width: 100%; min-height: auto; page-break-after: always; }
+    .editor-page { padding: 0; min-height: auto; }
   }
 
   /* ── Responsive ── */
   @media (max-width: 900px) {
-    #page { width: 100%; min-width: 0; }
-    #editor { padding: 40px 28px; }
+    #pages { width: 100%; min-width: 0; }
+    .page { width: 100%; }
+    .editor-page { padding: 40px 28px; min-height: auto; }
   }
 
   /* ── Link dialog ── */
@@ -365,6 +458,50 @@
     z-index: 120;
   }
   .rb-dd.open .rb-dd-menu { display: block; }
+
+  /* Generic small dropdown menu */
+  .rb-dd-menu-sm { width: 220px; padding: 10px; }
+  .dd-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 2px 6px 8px;
+  }
+  .dd-item {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text);
+    text-align: left;
+  }
+  .dd-item:hover { background: var(--btn-hover); border-color: var(--border); }
+
+  /* Inserted embeds */
+  .editor-page .embed-video {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    margin: 10px 0;
+  }
+  .editor-page .embed-video iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .editor-page .shape-wrap {
+    display: inline-block;
+    margin: 8px 0;
+    max-width: 100%;
+  }
   .tbl-top { padding: 4px 6px 10px; }
   .tbl-title { font-size: 12.5px; color: var(--text); font-weight: 600; margin-bottom: 8px; }
   .tbl-grid-wrap { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }

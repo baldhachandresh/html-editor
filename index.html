@@ -246,6 +246,36 @@
 
     <!-- Insert tab (hidden by default) -->
     <div id="tab-insert" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:8px;flex-wrap:wrap;">
+      <!-- Media -->
+      <button class="rb rb-wide" data-tip="Insert picture from your computer" onclick="openPictureFile()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="font-size:12px;">Pictures</span>
+      </button>
+      <input type="file" id="picture-input" accept="image/*" style="display:none" />
+
+      <button class="rb rb-wide" data-tip="Insert online video embed" onclick="insertOnlineVideo()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><polygon points="10 9 16 12 10 15 10 9"/></svg>
+        <span style="font-size:12px;">Online Videos</span>
+      </button>
+
+      <div class="rb-dd" id="shapes-dd">
+        <button class="rb rb-wide" data-tip="Insert shape" onclick="toggleShapesDropdown(event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="4" width="8" height="8" rx="1"/><circle cx="17" cy="7" r="3"/><path d="M14 14h8v6h-8z"/></svg>
+          <span style="font-size:12px;">Shapes</span>
+          <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="rb-dd-menu rb-dd-menu-sm" role="menu" aria-label="Insert Shapes">
+          <div class="dd-section-title">Basic Shapes</div>
+          <button class="dd-item" type="button" onclick="insertShape('rect'); closeAllDropdowns();">Rectangle</button>
+          <button class="dd-item" type="button" onclick="insertShape('round'); closeAllDropdowns();">Rounded</button>
+          <button class="dd-item" type="button" onclick="insertShape('circle'); closeAllDropdowns();">Circle</button>
+          <button class="dd-item" type="button" onclick="insertShape('arrow'); closeAllDropdowns();">Arrow</button>
+          <button class="dd-item" type="button" onclick="insertShape('line'); closeAllDropdowns();">Line</button>
+        </div>
+      </div>
+
+      <div class="rb-sep"></div>
+
       <button class="rb rb-wide" data-tip="Insert horizontal line" onclick="insertHR()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         <span style="font-size:12px;">Divider</span>
@@ -276,17 +306,11 @@
             <button class="tbl-item" type="button" onclick="openTableDialog(); closeAllDropdowns();">
               <span class="tbl-ico">▦</span> Insert Table…
             </button>
-            <button class="tbl-item" type="button" onclick="toast('Draw Table is not implemented yet'); closeAllDropdowns();">
-              <span class="tbl-ico">✎</span> Draw Table
-            </button>
-            <button class="tbl-item" type="button" onclick="toast('Convert Text to Table is not implemented yet'); closeAllDropdowns();">
+            <button class="tbl-item" type="button" onclick="convertTextToTable(); closeAllDropdowns();">
               <span class="tbl-ico">⇄</span> Convert Text to Table…
             </button>
-            <button class="tbl-item" type="button" onclick="toast('Excel Spreadsheet is not implemented yet'); closeAllDropdowns();">
-              <span class="tbl-ico">X</span> Excel Spreadsheet
-            </button>
-            <button class="tbl-item" type="button" onclick="toast('Quick Tables is not implemented yet'); closeAllDropdowns();">
-              <span class="tbl-ico">▤</span> Quick Tables
+            <button class="tbl-item" type="button" onclick="insertQuickTable('2x2'); closeAllDropdowns();">
+              <span class="tbl-ico">▤</span> Quick Table (2×2)
             </button>
           </div>
         </div>
@@ -294,6 +318,14 @@
       <button class="rb rb-wide" data-tip="Insert special character" onclick="insertSpecialChar()">
         <span style="font-size:13px;">Ω</span>
         <span style="font-size:12px;">Symbol</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert bookmark" onclick="insertBookmark()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2h12a2 2 0 0 1 2 2v18l-8-4-8 4V4a2 2 0 0 1 2-2z"/></svg>
+        <span style="font-size:12px;">Bookmark</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert cross-reference to bookmark" onclick="insertCrossReference()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span style="font-size:12px;">Cross-ref</span>
       </button>
       <button class="rb rb-wide" data-tip="Insert date & time" onclick="insertDateTime()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>
@@ -305,8 +337,42 @@
       </button>
     </div>
 
-    <!-- Placeholder tabs to match Word-like ribbon -->
-    <div id="tab-draw" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Draw tools (coming soon)</div>
+    <!-- Draw tab -->
+    <div id="tab-draw" class="ribbon-panel" style="display:none; padding:6px 0; align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="rb rb-wide" data-tip="Start drawing (Pen)" onclick="openDrawPad('pen')">
+        <span style="font-size:13px;">✎</span>
+        <span style="font-size:12px;">Pen</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Start drawing (Highlighter)" onclick="openDrawPad('highlighter')">
+        <span style="font-size:13px;">▧</span>
+        <span style="font-size:12px;">Highlighter</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Eraser" onclick="setDrawTool('eraser')">
+        <span style="font-size:13px;">⌫</span>
+        <span style="font-size:12px;">Eraser</span>
+      </button>
+
+      <div class="rb-sep"></div>
+
+      <label class="draw-label">Color</label>
+      <input type="color" id="draw-color" value="#c0692a" oninput="setDrawColor(this.value)" class="draw-color-input" />
+
+      <label class="draw-label">Size</label>
+      <input type="range" id="draw-size" min="2" max="24" value="6" oninput="setDrawSize(this.value)" class="draw-size" />
+      <span id="draw-size-label" class="draw-size-label">6</span>
+
+      <div class="rb-sep"></div>
+
+      <button class="rb rb-wide" data-tip="Clear drawing" onclick="clearDrawPad()">
+        <span style="font-size:12px;">Clear</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Insert drawing into document" onclick="saveDrawPad()">
+        <span style="font-size:12px; color:var(--accent); font-weight:600;">Insert</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Close drawing pad" onclick="closeDrawPad()">
+        <span style="font-size:12px;">Close</span>
+      </button>
+    </div>
     <div id="tab-design" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Design tools (coming soon)</div>
     <div id="tab-layout" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Layout tools (coming soon)</div>
     <div id="tab-references" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">References tools (coming soon)</div>
@@ -319,6 +385,12 @@
         <input type="checkbox" id="show-ruler" checked onchange="toggleRuler(this.checked)" style="accent-color:var(--accent);" />
         Show Margin Guides
       </label>
+      <div class="rb-sep"></div>
+      <label style="font-size:12.5px;color:var(--muted);">Paper</label>
+      <select class="rb-select" id="paper-size" style="width:90px" onchange="setPaperSize(this.value)" data-tip="Paper Size">
+        <option value="letter" selected>Letter</option>
+        <option value="a4">A4</option>
+      </select>
       <div class="rb-sep"></div>
       <label style="font-size:12.5px;color:var(--muted);">Page Width</label>
       <input type="range" id="page-zoom" min="60" max="100" value="100"
@@ -350,8 +422,9 @@
 
   <!-- ══ PAGE AREA ══ -->
   <div id="page-area">
-    <div id="page">
-      <div id="editor" contenteditable="true" spellcheck="true">
+    <div id="pages">
+      <div class="page" data-page="1">
+        <div class="editor-page" contenteditable="true" spellcheck="true">
         <h1>Welcome to WriteFlow</h1>
         <p>Start writing your document here. Use the toolbar above to format text, insert elements, and style your document.</p>
         <p><br></p>
@@ -371,6 +444,7 @@
         <p><br></p>
         <blockquote>Writing is thinking. To write well is to think clearly. — David McCullough</blockquote>
         <p><br></p>
+        </div>
       </div>
     </div>
   </div>
@@ -388,9 +462,11 @@
     <div class="rb-sep" style="height:14px;"></div>
     <div class="sb-item" id="sb-para">Paragraphs: 0</div>
     <div style="flex:1"></div>
+    <div class="sb-item" id="sb-pages">Page: 1 / 1</div>
+    <div class="rb-sep" style="height:14px;"></div>
     <div class="sb-item">
       <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <span>Letter (8.5 × 11 in)</span>
+      <span id="sb-paper">Letter (8.5 × 11 in)</span>
     </div>
   </div>
 
@@ -432,6 +508,21 @@
 
 <!-- ══ TOAST ══ -->
 <div id="toast"></div>
+
+<!-- ══ DRAW PAD ══ -->
+<div class="draw-overlay" id="draw-overlay" aria-hidden="true">
+  <div class="draw-box">
+    <div class="draw-top">
+      <div class="draw-title">Draw</div>
+      <div style="flex:1"></div>
+      <button class="draw-x" onclick="closeDrawPad()" aria-label="Close">✕</button>
+    </div>
+    <div class="draw-canvas-wrap">
+      <canvas id="draw-canvas" width="1200" height="700"></canvas>
+    </div>
+    <div class="draw-hint">Tip: use mouse/touch to draw. Insert to place it into your document.</div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
