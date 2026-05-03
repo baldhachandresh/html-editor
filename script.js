@@ -12,6 +12,7 @@
   let findMatches = [];
   let findIdx     = -1;
   let savedRange  = null; // saved selection for dialogs
+  let tableHover = { rows: 0, cols: 0 };
 
   // ── Update stats ─────────────────────────────────────
   function updateStats() {
@@ -50,13 +51,51 @@
   }
 
   function applyFontSize(pt) {
-    // execCommand fontSize uses 1-7 scale; we use inline style instead
+    editor.focus();
+    const sizePt = String(pt).trim();
+    if (!sizePt) return;
+
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    const span  = document.createElement('span');
-    span.style.fontSize = pt + 'pt';
-    range.surroundContents(span);
+    if (!sel || !sel.rangeCount) return;
+
+    // If no selection, set editor default size (so next typed text matches)
+    if (sel.isCollapsed) {
+      editor.style.fontSize = `${sizePt}pt`;
+      toast(`Font size set to ${sizePt}pt`);
+      return;
+    }
+
+    // Reliable approach: use execCommand('fontSize') then replace <font> tags with spans.
+    // This handles complex selections better than Range.surroundContents.
+    document.execCommand('fontSize', false, '7');
+    const fonts = editor.querySelectorAll('font[size="7"]');
+    fonts.forEach((font) => {
+      const span = document.createElement('span');
+      span.style.fontSize = `${sizePt}pt`;
+      span.innerHTML = font.innerHTML;
+      font.replaceWith(span);
+    });
+  }
+
+  async function pasteCmd() {
+    editor.focus();
+
+    // Best effort: clipboard API (requires user gesture + permissions).
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.execCommand('insertText', false, text);
+          toast('Pasted');
+          return;
+        }
+      }
+    } catch (_) {
+      // ignore; we'll fall back below
+    }
+
+    // Fallback: let the browser handle Ctrl+V / context-menu paste.
+    toast('Press Ctrl+V to paste (browser security)');
   }
 
   function applyColor(cmd, color) {
@@ -78,7 +117,71 @@
   }
 
   function applyLineSpacing(val) {
-    editor.style.lineHeight = val;
+    editor.style.setProperty('--editor-lh', String(val));
+  }
+
+  function setParaSpacing(spaceEm) {
+    editor.style.setProperty('--para-space', `${spaceEm}em`);
+  }
+
+  function applyStylePreset(name) {
+    editor.focus();
+
+    if (name === 'normal') {
+      applyBlock('p');
+      applyLineSpacing('1.75');
+      setParaSpacing(0.4);
+    } else if (name === 'nospace') {
+      applyBlock('p');
+      applyLineSpacing('1.2');
+      setParaSpacing(0.0);
+    } else if (name === 'heading') {
+      applyBlock('h2');
+      applyLineSpacing('1.3');
+      setParaSpacing(0.2);
+    }
+
+    updateStyleTiles(name);
+    updateActiveButtons();
+    updateStats();
+  }
+
+  function updateStyleTiles(force) {
+    const tiles = {
+      normal: document.getElementById('style-normal'),
+      nospace: document.getElementById('style-nospace'),
+      heading: document.getElementById('style-heading'),
+    };
+    Object.values(tiles).forEach(t => t && t.classList.remove('active'));
+
+    if (force && tiles[force]) {
+      tiles[force].classList.add('active');
+      return;
+    }
+
+    let block = '';
+    try {
+      block = String(document.queryCommandValue('formatBlock') || '')
+        .toLowerCase()
+        .replace(/[<>]/g, '');
+    } catch (_) {
+      block = '';
+    }
+
+    const lh = (getComputedStyle(editor).getPropertyValue('--editor-lh') || '').trim();
+    const ps = (getComputedStyle(editor).getPropertyValue('--para-space') || '').trim();
+
+    if (block === 'h2' || block === 'h1' || block === 'h3' || block === 'h4') {
+      tiles.heading && tiles.heading.classList.add('active');
+      return;
+    }
+
+    if ((ps === '0em' || ps === '0') && (lh === '1.2' || lh === '1.15')) {
+      tiles.nospace && tiles.nospace.classList.add('active');
+      return;
+    }
+
+    tiles.normal && tiles.normal.classList.add('active');
   }
 
   // ── Track active states ──────────────────────────────
@@ -99,6 +202,7 @@
     const block = document.queryCommandValue('formatBlock').toLowerCase().replace(/[<>]/g,'');
     const bf = document.getElementById('block-format');
     if (bf && block) bf.value = block;
+    updateStyleTiles();
   }
 
   editor.addEventListener('keyup',   updateStats);
@@ -116,7 +220,19 @@
   function showTab(name, el) {
     document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
-    const panels = { home:'tab-home', insert:'tab-insert', format:'tab-format', view:'tab-view' };
+    const panels = {
+      file:'tab-file',
+      home:'tab-home',
+      insert:'tab-insert',
+      draw:'tab-draw',
+      design:'tab-design',
+      layout:'tab-layout',
+      references:'tab-references',
+      mailings:'tab-mailings',
+      review:'tab-review',
+      view:'tab-view',
+      help:'tab-help',
+    };
     Object.values(panels).forEach(id => {
       const p = document.getElementById(id);
       if (p) p.style.display = 'none';
@@ -124,8 +240,8 @@
     const target = document.getElementById(panels[name]);
     if (target) target.style.display = 'flex';
   }
-  // Show home tab by default (already set via display block)
-  document.getElementById('tab-home').style.display = 'flex';
+  // Show File tab by default (Word-like)
+  document.getElementById('tab-file').style.display = 'flex';
 
   // ── Keyboard shortcuts ───────────────────────────────
   document.addEventListener('keydown', (e) => {
@@ -384,11 +500,6 @@
 
   // ── View controls ────────────────────────────────────
   function toggleRuler(show) {
-    document.getElementById('page').style.setProperty(
-      '--guide', show ? 'rgba(192,105,42,.1)' : 'transparent'
-    );
-    document.querySelector('#page::before');
-    // Use a class instead
     document.getElementById('page').classList.toggle('no-guide', !show);
   }
 
@@ -419,10 +530,87 @@
   // ── Init ──────────────────────────────────────────────
   loadSaved();
   updateStats();
+  updateStyleTiles('normal');
 
   // Make dialog links work
   document.getElementById('editor').addEventListener('click', e => {
     if (e.target.tagName === 'A' && e.ctrlKey) {
       window.open(e.target.href, '_blank');
     }
+  });
+
+  // ── Table grid dropdown (Insert → Table) ──────────────
+  function ensureTableGrid() {
+    const grid = document.getElementById('table-grid');
+    if (!grid || grid.childElementCount) return;
+    const maxCols = 10;
+    const maxRows = 8;
+    for (let r = 1; r <= maxRows; r++) {
+      for (let c = 1; c <= maxCols; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'tbl-cell';
+        cell.dataset.r = String(r);
+        cell.dataset.c = String(c);
+        cell.addEventListener('mouseenter', () => setTableHover(r, c));
+        cell.addEventListener('click', (e) => {
+          e.preventDefault();
+          insertTableGrid(r, c);
+          closeAllDropdowns();
+        });
+        grid.appendChild(cell);
+      }
+    }
+    setTableHover(0, 0);
+  }
+
+  function setTableHover(rows, cols) {
+    tableHover = { rows, cols };
+    const label = document.getElementById('table-size-label');
+    if (label) label.textContent = `${rows} × ${cols}`;
+    const cells = document.querySelectorAll('#table-grid .tbl-cell');
+    cells.forEach((cell) => {
+      const r = parseInt(cell.dataset.r, 10);
+      const c = parseInt(cell.dataset.c, 10);
+      cell.classList.toggle('on', r <= rows && c <= cols && rows > 0 && cols > 0);
+    });
+  }
+
+  function insertTableGrid(rows, cols) {
+    if (!rows || !cols) return;
+    let html = '<table><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) html += '<td>&nbsp;</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br></p>';
+    editor.focus();
+    document.execCommand('insertHTML', false, html);
+    toast(`Inserted ${rows}×${cols} table`);
+  }
+
+  function closeAllDropdowns() {
+    document.querySelectorAll('.rb-dd.open').forEach((dd) => dd.classList.remove('open'));
+  }
+
+  function toggleTableDropdown(ev) {
+    if (ev) ev.preventDefault();
+    ensureTableGrid();
+    const dd = document.getElementById('table-dd');
+    if (!dd) return;
+    const isOpen = dd.classList.contains('open');
+    closeAllDropdowns();
+    dd.classList.toggle('open', !isOpen);
+    if (!isOpen) setTableHover(0, 0);
+  }
+
+  window.toggleTableDropdown = toggleTableDropdown;
+  window.closeAllDropdowns = closeAllDropdowns;
+  window.pasteCmd = pasteCmd;
+  window.applyStylePreset = applyStylePreset;
+
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('table-dd');
+    if (!dd) return;
+    if (!dd.contains(e.target)) closeAllDropdowns();
   });

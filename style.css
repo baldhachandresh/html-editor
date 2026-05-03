@@ -78,10 +78,11 @@
     border-bottom: 1px solid var(--border);
     margin: 0 -16px;
     padding: 0 16px;
+    align-items: flex-end;
   }
   .rtab {
-    font-size: 11.5px; font-weight: 500; color: var(--muted);
-    padding: 6px 14px; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    padding: 8px 14px; cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     transition: color .15s, border-color .15s;
@@ -198,6 +199,7 @@
     pointer-events: none;
     border-radius: 1px;
   }
+  #page.no-guide::before { display: none; }
 
   /* Editable area */
   #editor {
@@ -206,13 +208,13 @@
     outline: none;
     font-family: 'Lora', serif;
     font-size: 13pt;
-    line-height: 1.75;
+    line-height: var(--editor-lh, 1.75);
     color: var(--text);
     word-break: break-word;
     overflow-wrap: break-word;
   }
   #editor:focus { outline: none; }
-  #editor p { margin-bottom: .4em; }
+  #editor p { margin-bottom: var(--para-space, .4em); }
   #editor h1 { font-size: 2.2em; font-weight: 700; margin: .5em 0 .2em; color: #1e1a16; }
   #editor h2 { font-size: 1.7em; font-weight: 600; margin: .5em 0 .2em; color: #2c2825; }
   #editor h3 { font-size: 1.35em; font-weight: 600; margin: .5em 0 .15em; }
@@ -345,3 +347,99 @@
   .dialog-row { display: flex; gap: 12px; }
   .dialog-field { flex: 1; }
   .dialog-field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+  /* ── Ribbon dropdown (Table grid) ── */
+  .rb-dd { position: relative; display: inline-flex; }
+  .rb-dd .caret { font-size: 11px; color: var(--muted); margin-left: 2px; }
+  .rb-dd-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 260px;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 16px 56px rgba(44,40,37,.16);
+    padding: 10px;
+    display: none;
+    z-index: 120;
+  }
+  .rb-dd.open .rb-dd-menu { display: block; }
+  .tbl-top { padding: 4px 6px 10px; }
+  .tbl-title { font-size: 12.5px; color: var(--text); font-weight: 600; margin-bottom: 8px; }
+  .tbl-grid-wrap { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  .tbl-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 16px);
+    grid-auto-rows: 16px;
+    gap: 4px;
+    user-select: none;
+  }
+  .tbl-cell {
+    width: 16px; height: 16px;
+    background: #d6d6d6;
+    border: 1px solid rgba(44,40,37,.12);
+    border-radius: 2px;
+  }
+  .tbl-cell.on {
+    background: #9a9a9a;
+    border-color: rgba(44,40,37,.22);
+  }
+  .tbl-size { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .tbl-actions { border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; }
+  .tbl-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text);
+    text-align: left;
+  }
+  .tbl-item:hover { background: var(--btn-hover); border-color: var(--border); }
+  .tbl-ico {
+    width: 18px; height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+
+  /* ── Styles tiles (Home tab) ── */
+  .styles-group {
+    display: inline-flex;
+    gap: 8px;
+    align-items: stretch;
+    padding: 2px 2px;
+    border-radius: 8px;
+  }
+  .style-tile {
+    width: 112px;
+    height: 44px;
+    background: var(--chrome);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    transition: border-color .12s, background .12s, box-shadow .12s;
+    text-align: left;
+  }
+  .style-tile:hover {
+    background: var(--btn-hover);
+    border-color: #cfc7bb;
+  }
+  .style-tile.active {
+    border-color: rgba(192,105,42,.55);
+    box-shadow: 0 0 0 3px rgba(192,105,42,.12);
+  }
+  .style-name { font-size: 12px; color: var(--text); font-weight: 600; }
+  .style-preview { font-size: 11.5px; color: var(--muted); }

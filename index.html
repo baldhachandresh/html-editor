@@ -41,30 +41,66 @@
   <!-- ══ RIBBON ══ -->
   <div id="ribbon">
     <div id="ribbon-tabs">
-      <span class="rtab active" onclick="showTab('home',this)">Home</span>
+      <span class="rtab active" onclick="showTab('file',this)">File</span>
+      <span class="rtab" onclick="showTab('home',this)">Home</span>
       <span class="rtab" onclick="showTab('insert',this)">Insert</span>
-      <span class="rtab" onclick="showTab('format',this)">Format</span>
+      <span class="rtab" onclick="showTab('draw',this)">Draw</span>
+      <span class="rtab" onclick="showTab('design',this)">Design</span>
+      <span class="rtab" onclick="showTab('layout',this)">Layout</span>
+      <span class="rtab" onclick="showTab('references',this)">References</span>
+      <span class="rtab" onclick="showTab('mailings',this)">Mailings</span>
+      <span class="rtab" onclick="showTab('review',this)">Review</span>
       <span class="rtab" onclick="showTab('view',this)">View</span>
+      <span class="rtab" onclick="showTab('help',this)">Help</span>
+    </div>
+
+    <!-- File tab -->
+    <div id="tab-file" class="ribbon-panel" style="padding:6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="rb rb-wide" data-tip="New Document" onclick="newDoc()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span style="font-size:12px;">New</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Open .txt/.html file" onclick="openFile()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span style="font-size:12px;">Open</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Save as HTML (Ctrl+S)" onclick="saveHTML()" style="color:var(--accent);font-weight:500;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span style="font-size:12px;">Save</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Print / Save as PDF (Ctrl+P)" onclick="window.print()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span style="font-size:12px;">Print</span>
+      </button>
+      <div class="rb-sep"></div>
+      <button class="rb rb-wide" data-tip="Find & Replace (Ctrl+F)" onclick="toggleFind()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span style="font-size:12px;">Find</span>
+      </button>
+      <button class="rb rb-wide" data-tip="Clear document" onclick="clearDoc()" style="color:#cc4444;">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+        <span style="font-size:12px;">Clear</span>
+      </button>
     </div>
 
     <!-- Home tab -->
-    <div id="tab-home" class="ribbon-panel" id="ribbon-body">
+    <div id="tab-home" class="ribbon-panel" style="display:none;">
       <div id="ribbon-body" style="padding:6px 0;display:flex;align-items:center;gap:2px;flex-wrap:wrap;">
 
         <!-- Clipboard -->
-        <button class="rb" data-tip="Cut (Ctrl+X)" onclick="document.execCommand('cut')">
+        <button type="button" class="rb" data-tip="Cut (Ctrl+X)" aria-label="Cut" onclick="document.execCommand('cut')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="6" cy="20" r="2"/><circle cx="6" cy="4" r="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="21" y2="21"/><line x1="6" y1="18" x2="21" y2="3"/></svg>
         </button>
-        <button class="rb" data-tip="Copy (Ctrl+C)" onclick="document.execCommand('copy')">
+        <button type="button" class="rb" data-tip="Copy (Ctrl+C)" aria-label="Copy" onclick="document.execCommand('copy')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
-        <button class="rb" data-tip="Paste (Ctrl+V)" onclick="document.execCommand('paste')">
+        <button type="button" class="rb" data-tip="Paste (Ctrl+V)" aria-label="Paste" onclick="pasteCmd()">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         </button>
-        <button class="rb" data-tip="Undo (Ctrl+Z)" onclick="document.execCommand('undo')">
+        <button type="button" class="rb" data-tip="Undo (Ctrl+Z)" aria-label="Undo" onclick="document.execCommand('undo')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
         </button>
-        <button class="rb" data-tip="Redo (Ctrl+Y)" onclick="document.execCommand('redo')">
+        <button type="button" class="rb" data-tip="Redo (Ctrl+Y)" aria-label="Redo" onclick="document.execCommand('redo')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
         </button>
 
@@ -122,16 +158,16 @@
         <div class="rb-sep"></div>
 
         <!-- Alignment -->
-        <button class="rb" id="btn-left"    data-tip="Align Left (Ctrl+L)"   onclick="fmt('justifyLeft')">
+        <button type="button" class="rb" id="btn-left"    data-tip="Align Left (Ctrl+L)"   aria-label="Align Left" onclick="fmt('justifyLeft')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="15" y1="12" x2="3" y2="12"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
         </button>
-        <button class="rb" id="btn-center" data-tip="Align Center (Ctrl+E)" onclick="fmt('justifyCenter')">
+        <button type="button" class="rb" id="btn-center" data-tip="Align Center (Ctrl+E)" aria-label="Align Center" onclick="fmt('justifyCenter')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="12" x2="6" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
         </button>
-        <button class="rb" id="btn-right"  data-tip="Align Right (Ctrl+R)"  onclick="fmt('justifyRight')">
+        <button type="button" class="rb" id="btn-right"  data-tip="Align Right (Ctrl+R)"  aria-label="Align Right" onclick="fmt('justifyRight')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="9" y2="12"/><line x1="21" y1="18" x2="5" y2="18"/></svg>
         </button>
-        <button class="rb" id="btn-justify" data-tip="Justify" onclick="fmt('justifyFull')">
+        <button type="button" class="rb" id="btn-justify" data-tip="Justify" aria-label="Justify" onclick="fmt('justifyFull')">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
         </button>
 
@@ -175,6 +211,24 @@
 
         <div class="rb-sep"></div>
 
+        <!-- Styles (Word-like) -->
+        <div class="styles-group" data-tip="Quick Styles">
+          <button class="style-tile active" id="style-normal" type="button" onclick="applyStylePreset('normal')">
+            <div class="style-name">Normal</div>
+            <div class="style-preview">AaBbCc</div>
+          </button>
+          <button class="style-tile" id="style-nospace" type="button" onclick="applyStylePreset('nospace')">
+            <div class="style-name">No Spacing</div>
+            <div class="style-preview">AaBbCc</div>
+          </button>
+          <button class="style-tile" id="style-heading" type="button" onclick="applyStylePreset('heading')">
+            <div class="style-name">Heading</div>
+            <div class="style-preview">AaBbCc</div>
+          </button>
+        </div>
+
+        <div class="rb-sep"></div>
+
         <!-- Find & Replace -->
         <button class="rb rb-wide" data-tip="Find & Replace (Ctrl+F)" onclick="toggleFind()">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -191,7 +245,7 @@
     </div>
 
     <!-- Insert tab (hidden by default) -->
-    <div id="tab-insert" class="ribbon-panel" style="display:none; padding:6px 0;display:none;align-items:center;gap:2px;flex-wrap:wrap;">
+    <div id="tab-insert" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:8px;flex-wrap:wrap;">
       <button class="rb rb-wide" data-tip="Insert horizontal line" onclick="insertHR()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         <span style="font-size:12px;">Divider</span>
@@ -204,10 +258,39 @@
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         <span style="font-size:12px;">Image</span>
       </button>
-      <button class="rb rb-wide" data-tip="Insert table" onclick="openTableDialog()">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-        <span style="font-size:12px;">Table</span>
-      </button>
+      <div class="rb-dd" id="table-dd">
+        <button class="rb rb-wide" data-tip="Insert table" onclick="toggleTableDropdown(event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+          <span style="font-size:12px;">Table</span>
+          <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="rb-dd-menu" id="table-menu" role="menu" aria-label="Insert Table">
+          <div class="tbl-top">
+            <div class="tbl-title">Insert Table</div>
+            <div class="tbl-grid-wrap">
+              <div class="tbl-grid" id="table-grid" aria-label="Table grid picker"></div>
+            </div>
+            <div class="tbl-size" id="table-size-label">0 × 0</div>
+          </div>
+          <div class="tbl-actions">
+            <button class="tbl-item" type="button" onclick="openTableDialog(); closeAllDropdowns();">
+              <span class="tbl-ico">▦</span> Insert Table…
+            </button>
+            <button class="tbl-item" type="button" onclick="toast('Draw Table is not implemented yet'); closeAllDropdowns();">
+              <span class="tbl-ico">✎</span> Draw Table
+            </button>
+            <button class="tbl-item" type="button" onclick="toast('Convert Text to Table is not implemented yet'); closeAllDropdowns();">
+              <span class="tbl-ico">⇄</span> Convert Text to Table…
+            </button>
+            <button class="tbl-item" type="button" onclick="toast('Excel Spreadsheet is not implemented yet'); closeAllDropdowns();">
+              <span class="tbl-ico">X</span> Excel Spreadsheet
+            </button>
+            <button class="tbl-item" type="button" onclick="toast('Quick Tables is not implemented yet'); closeAllDropdowns();">
+              <span class="tbl-ico">▤</span> Quick Tables
+            </button>
+          </div>
+        </div>
+      </div>
       <button class="rb rb-wide" data-tip="Insert special character" onclick="insertSpecialChar()">
         <span style="font-size:13px;">Ω</span>
         <span style="font-size:12px;">Symbol</span>
@@ -222,33 +305,13 @@
       </button>
     </div>
 
-    <!-- Format tab -->
-    <div id="tab-format" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:2px;flex-wrap:wrap;">
-      <select class="rb-select" style="width:130px" onchange="applyFont(this.value)" data-tip="Font Family">
-        <option value="Lora, serif">Lora</option>
-        <option value="'DM Sans', sans-serif">DM Sans</option>
-        <option value="Georgia, serif">Georgia</option>
-        <option value="'Times New Roman', serif">Times New Roman</option>
-        <option value="'Courier New', monospace">Courier New</option>
-        <option value="Arial, sans-serif">Arial</option>
-      </select>
-      <button class="rb rb-wide" onclick="document.execCommand('fontSize',false,'5')">
-        <span style="font-size:12px;">Increase Size</span>
-      </button>
-      <button class="rb rb-wide" onclick="document.execCommand('fontSize',false,'2')">
-        <span style="font-size:12px;">Decrease Size</span>
-      </button>
-      <div class="rb-sep"></div>
-      <button class="rb rb-wide" onclick="fmt('bold')"><b>Bold</b></button>
-      <button class="rb rb-wide" onclick="fmt('italic')"><i>Italic</i></button>
-      <button class="rb rb-wide" onclick="fmt('underline')"><u>Underline</u></button>
-      <button class="rb rb-wide" onclick="fmt('strikeThrough')"><s>Strike</s></button>
-      <div class="rb-sep"></div>
-      <button class="rb rb-wide" onclick="fmt('removeFormat')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        <span style="font-size:12px;">Clear Formatting</span>
-      </button>
-    </div>
+    <!-- Placeholder tabs to match Word-like ribbon -->
+    <div id="tab-draw" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Draw tools (coming soon)</div>
+    <div id="tab-design" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Design tools (coming soon)</div>
+    <div id="tab-layout" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Layout tools (coming soon)</div>
+    <div id="tab-references" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">References tools (coming soon)</div>
+    <div id="tab-mailings" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Mailings tools (coming soon)</div>
+    <div id="tab-review" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Review tools (coming soon)</div>
 
     <!-- View tab -->
     <div id="tab-view" class="ribbon-panel" style="display:none; padding:6px 0;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -268,6 +331,8 @@
         <span style="font-size:12px;">Print Preview</span>
       </button>
     </div>
+
+    <div id="tab-help" class="ribbon-panel" style="display:none; padding:10px 0; color:var(--muted); font-size:12.5px;">Help (coming soon)</div>
   </div>
 
   <!-- ══ FIND & REPLACE ══ -->
